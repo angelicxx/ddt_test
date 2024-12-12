@@ -51,3 +51,37 @@ def test_dog(param):
     assert 'Cat' != brewery_city_5.json()[param]['name'].split(' ')[1]
 
 
+import pytest
+import requests
+from APIRoutes import APIRoutes
+
+# 1. Проверка получения пивоварен по городу
+@pytest.mark.parametrize('city', ['san_diego', 'new_york'])
+def test_breweries_by_city(city):
+    response = requests.get(APIRoutes.get_breweries_by_city(city))
+    breweries = response.json()
+    assert len(breweries) > 0, f"Пивоварни для города {city} не найдены!"
+    for brewery in breweries:
+        assert brewery['city'].lower().replace(' ', '_') == city, "Город в результате не совпадает!"
+
+# 2. Проверка автозаполнения пивоварен
+@pytest.mark.parametrize('query, expected', [('dog', 'Dog'), ('cat', 'Cat')])
+def test_autocomplete_breweries(query, expected):
+    response = requests.get(APIRoutes.autocomplete_breweries(query))
+    results = response.json()
+    assert len(results) > 0, f"Результаты для запроса '{query}' не найдены!"
+    assert any(expected in result['name'] for result in results), f"'{expected}' отсутствует в результатах!"
+
+# 3. Проверка случайных пивоварен
+def test_random_breweries():
+    response = requests.get(APIRoutes.get_random_breweries(size=3))
+    breweries = response.json()
+    assert len(breweries) == 3, "Количество случайных пивоварен не совпадает!"
+
+# 4. Проверка поиска пивоварен по имени
+@pytest.mark.parametrize('query', ['gordon', 'brew'])
+def test_search_breweries(query):
+    response = requests.get(APIRoutes.search_breweries(query))
+    results = response.json()
+    assert len(results) > 0, f"Пивоварни для запроса '{query}' не найдены!"
+    assert any(query.lower() in result['name'].lower() for result in results), f"'{query}' отсутствует в результатах!"
